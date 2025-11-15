@@ -1,0 +1,1412 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <title>Digital Mixer UI - Styled</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    body {
+      background: radial-gradient(circle at top, #3b3b3b 0, #151515 45%, #000 100%);
+      color: #f5f5f5;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 12px;
+    }
+
+    .mixer-shell {
+      width: 100%;
+      max-width: 1300px;
+      background: #050609;
+      border-radius: 26px;
+      box-shadow:
+        0 30px 80px rgba(0,0,0,0.9),
+        0 0 0 2px #1f2937,
+        inset 0 0 20px rgba(0,0,0,0.8);
+      padding: 10px 14px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    /* Top bar (scene / bt / info) */
+    .top-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      padding-bottom: 6px;
+      border-bottom: 1px solid #111827;
+    }
+
+    .brand-block {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .brand-title {
+      font-size: 1.1rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      font-weight: 600;
+    }
+
+    .brand-sub {
+      font-size: 0.7rem;
+      color: #9ca3af;
+    }
+
+    .top-middle {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .scene-label {
+      background: #020617;
+      border-radius: 12px;
+      padding: 4px 10px;
+      border: 1px solid #374151;
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: #e5e7eb;
+    }
+
+    .scene-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 999px;
+      background: #22c55e;
+      box-shadow: 0 0 10px rgba(34,197,94,0.7);
+      display: inline-block;
+      margin-right: 6px;
+    }
+
+    .top-right {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .bt-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      border: 1px solid #1d4ed8;
+      background: radial-gradient(circle at top, #1e293b, #020617);
+      font-size: 0.7rem;
+      cursor: default;
+    }
+
+    .bt-dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 999px;
+      background: #ef4444;
+      box-shadow: 0 0 10px rgba(239,68,68,0.8);
+    }
+
+    .bt-pill.connected .bt-dot {
+      background: #22c55e;
+      box-shadow: 0 0 10px rgba(34,197,94,0.9);
+    }
+
+    .bt-main {
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .bt-sub {
+      font-size: 0.65rem;
+      color: #9ca3af;
+    }
+
+    .btn {
+      padding: 5px 12px;
+      border-radius: 999px;
+      border: 1px solid #4b5563;
+      background: radial-gradient(circle at top, #374151, #0f172a);
+      font-size: 0.75rem;
+      color: #e5e7eb;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      cursor: pointer;
+      transition: 0.12s background, 0.1s transform, 0.12s box-shadow;
+      box-shadow: 0 6px 12px rgba(0,0,0,0.7);
+    }
+
+    .btn:active {
+      transform: translateY(1px);
+      box-shadow: 0 3px 6px rgba(0,0,0,0.7);
+    }
+
+    .btn-main {
+      border-color: #2563eb;
+      background: radial-gradient(circle at top, #3b82f6, #1d4ed8);
+    }
+
+    .btn-icon {
+      font-size: 0.95rem;
+    }
+
+    /* Mixer core layout */
+    .core-layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 12px;
+      margin-top: 4px;
+    }
+
+    /* Channel area (scroll) */
+    .channel-scroll {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding: 8px 2px 4px;
+    }
+
+    .channel-scroll::-webkit-scrollbar {
+      height: 6px;
+    }
+    .channel-scroll::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    .channel-scroll::-webkit-scrollbar-thumb {
+      background: #111827;
+      border-radius: 999px;
+    }
+
+    /* Channel strip */
+    .chan {
+      min-width: 82px;
+      max-width: 82px;
+      background: linear-gradient(180deg, #020617 0%, #020617 60%, #030712 100%);
+      border-radius: 18px;
+      padding: 6px 6px 8px;
+      box-shadow:
+        0 10px 18px rgba(0,0,0,0.8),
+        0 0 0 1px #111827;
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      position: relative;
+    }
+
+    .chan-header {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      margin-bottom: 4px;
+    }
+
+    .chan-top-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+    }
+
+    .chan-name {
+      font-size: 0.7rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .chan-num {
+      font-size: 0.7rem;
+      color: #9ca3af;
+    }
+
+    .scribble {
+      margin-top: 3px;
+      border-radius: 6px;
+      padding: 3px 4px;
+      font-size: 0.7rem;
+      text-align: center;
+      color: #020617;
+      font-weight: 600;
+      text-shadow: 0 0 2px rgba(255,255,255,0.7);
+    }
+
+    .scribble.vocal {
+      background: linear-gradient(90deg, #f9a8d4, #fb923c);
+    }
+    .scribble.music {
+      background: linear-gradient(90deg, #93c5fd, #22d3ee);
+    }
+    .scribble.generic {
+      background: linear-gradient(90deg, #facc15, #4ade80);
+    }
+
+    /* Top buttons row (ON / SEL / SOLO / MUTE) */
+    .top-btn-row {
+      margin: 6px 0 4px;
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 4px;
+    }
+
+    .btn-square {
+      border: 1px solid #4b5563;
+      background: radial-gradient(circle at top, #0b1120, #020617);
+      border-radius: 6px;
+      font-size: 0.6rem;
+      color: #d1d5db;
+      text-align: center;
+      padding: 2px 0;
+      cursor: pointer;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      transition: 0.12s background, 0.1s transform, 0.12s box-shadow, 0.12s border-color, 0.12s color;
+    }
+
+    .btn-square:active {
+      transform: translateY(1px);
+    }
+
+    .btn-square.on.active {
+      background: #22c55e;
+      border-color: #22c55e;
+      color: #020617;
+      box-shadow: 0 0 10px rgba(34,197,94,0.85);
+    }
+    .btn-square.sel.active {
+      background: #3b82f6;
+      border-color: #3b82f6;
+      color: #e5e7eb;
+      box-shadow: 0 0 10px rgba(59,130,246,0.85);
+    }
+    .btn-square.solo.active {
+      background: #22c55e;
+      border-color: #22c55e;
+      color: #020617;
+    }
+    .btn-square.mute.active {
+      background: #f97373;
+      border-color: #f97373;
+      color: #020617;
+      box-shadow: 0 0 10px rgba(248,113,113,0.85);
+    }
+
+    /* PAN knob (fake) */
+    .pan-block {
+      margin-top: 4px;
+      padding: 3px 4px 4px;
+      border-radius: 10px;
+      border: 1px solid #111827;
+      background: radial-gradient(circle at top, #020617, #020617 50%, #020617 100%);
+    }
+
+    .pan-label-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.6rem;
+      color: #9ca3af;
+      margin-bottom: 2px;
+    }
+
+    .pan-knob-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 4px;
+    }
+
+    .pan-knob {
+      width: 24px;
+      height: 24px;
+      border-radius: 999px;
+      background: radial-gradient(circle at 30% 20%, #f9fafb, #9ca3af);
+      border: 1px solid #e5e7eb;
+      box-shadow:
+        0 0 0 2px rgba(15,23,42,0.9),
+        0 6px 10px rgba(0,0,0,0.95);
+      position: relative;
+    }
+
+    .pan-indicator {
+      width: 2px;
+      height: 8px;
+      border-radius: 999px;
+      background: #020617;
+      position: absolute;
+      top: 3px;
+      left: 50%;
+      transform: translateX(-50%);
+    }
+
+    .pan-value {
+      font-size: 0.6rem;
+      color: #e5e7eb;
+    }
+
+    /* Meter segment style */
+    .meter-block {
+      margin-top: 5px;
+      padding: 4px 3px 3px;
+      border-radius: 11px;
+      border: 1px solid #111827;
+      background: radial-gradient(circle at left, #020617, #020617 60%, #020617 100%);
+      position: relative;
+      height: 82px;
+      display: flex;
+      gap: 2px;
+    }
+
+    .meter-ladder {
+      flex: 1;
+      display: flex;
+      flex-direction: column-reverse;
+      gap: 2px;
+      padding-right: 2px;
+    }
+
+    .meter-step {
+      height: 5px;
+      border-radius: 999px;
+      background: #020617;
+      box-shadow: inset 0 0 2px rgba(0,0,0,0.9);
+      opacity: 0.3;
+      transition: 0.08s opacity, 0.08s box-shadow, 0.08s background;
+    }
+
+    .meter-step.green {
+      background: #22c55e;
+    }
+    .meter-step.yellow {
+      background: #eab308;
+    }
+    .meter-step.red {
+      background: #ef4444;
+    }
+
+    .meter-step.active {
+      opacity: 1;
+      box-shadow: 0 0 6px rgba(34,197,94,0.8);
+    }
+    .meter-step.yellow.active {
+      box-shadow: 0 0 6px rgba(234,179,8,0.85);
+    }
+    .meter-step.red.active {
+      box-shadow: 0 0 6px rgba(239,68,68,0.9);
+    }
+
+    .meter-scale {
+      width: 16px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      font-size: 0.55rem;
+      color: #6b7280;
+      text-align: right;
+    }
+
+    /* Fader */
+    .fader-wrap {
+      margin-top: 6px;
+      padding-top: 4px;
+      border-top: 1px solid #020617;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+    }
+
+    .fader-track {
+      height: 140px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .fader {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 130px;
+      height: 28px;
+      transform: rotate(-90deg);
+      background: transparent;
+      outline: none;
+    }
+
+    .fader::-webkit-slider-runnable-track {
+      height: 7px;
+      background: linear-gradient(90deg, #111827, #4b5563, #9ca3af);
+      border-radius: 999px;
+      box-shadow: inset 0 0 4px rgba(0,0,0,0.7);
+    }
+
+    .fader::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 20px;
+      height: 20px;
+      border-radius: 5px;
+      background: linear-gradient(180deg, #f9fafb, #9ca3af);
+      border: 1px solid #e5e7eb;
+      box-shadow:
+        0 0 0 2px rgba(15,23,42,0.9),
+        0 6px 10px rgba(0,0,0,1);
+      margin-top: -6px;
+    }
+
+    .fader::-moz-range-track {
+      height: 7px;
+      background: linear-gradient(90deg, #111827, #4b5563, #9ca3af);
+      border-radius: 999px;
+    }
+
+    .fader::-moz-range-thumb {
+      width: 20px;
+      height: 20px;
+      border-radius: 5px;
+      background: linear-gradient(180deg, #f9fafb, #9ca3af);
+      border: 1px solid #e5e7eb;
+      box-shadow:
+        0 0 0 2px rgba(15,23,42,0.9),
+        0 6px 10px rgba(0,0,0,1);
+    }
+
+    .fader-db {
+      font-size: 0.7rem;
+      color: #e5e7eb;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .fader-db span {
+      font-variant-numeric: tabular-nums;
+    }
+
+    .chan-footer {
+      margin-top: 2px;
+      font-size: 0.55rem;
+      text-align: center;
+      color: #6b7280;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    /* Master section */
+    .master {
+      width: 150px;
+      border-radius: 18px;
+      padding: 8px 8px 10px;
+      background: radial-gradient(circle at top, #020617, #020617 55%, #020617 100%);
+      box-shadow:
+        0 10px 18px rgba(0,0,0,0.8),
+        0 0 0 1px #111827;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .master-head {
+      text-align: center;
+    }
+
+    .master-title {
+      font-size: 0.8rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+    }
+
+    .master-sub {
+      font-size: 0.65rem;
+      color: #9ca3af;
+    }
+
+    .master-meter-block {
+      margin-top: 6px;
+      display: flex;
+      gap: 6px;
+      justify-content: center;
+    }
+
+    .master-ladder {
+      flex: 1;
+      display: flex;
+      flex-direction: column-reverse;
+      gap: 3px;
+      padding: 4px 2px;
+      border-radius: 12px;
+      border: 1px solid #111827;
+      background: radial-gradient(circle at left, #020617, #020617 60%, #020617 100%);
+      max-width: 32px;
+    }
+
+    .master-step {
+      height: 6px;
+      border-radius: 999px;
+      background: #020617;
+      box-shadow: inset 0 0 2px rgba(0,0,0,0.9);
+      opacity: 0.25;
+      transition: 0.08s opacity, 0.08s box-shadow, 0.08s background;
+    }
+
+    .master-step.green { background: #22c55e; }
+    .master-step.yellow { background: #eab308; }
+    .master-step.red { background: #ef4444; }
+
+    .master-step.active {
+      opacity: 1;
+      box-shadow: 0 0 6px rgba(34,197,94,0.8);
+    }
+    .master-step.yellow.active {
+      box-shadow: 0 0 6px rgba(234,179,8,0.85);
+    }
+    .master-step.red.active {
+      box-shadow: 0 0 6px rgba(239,68,68,0.9);
+    }
+
+    .master-scale {
+      width: 18px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      font-size: 0.55rem;
+      color: #6b7280;
+      text-align: right;
+      padding-top: 4px;
+    }
+
+    .master-fader-wrap {
+      margin-top: 6px;
+      border-top: 1px solid #020617;
+      padding-top: 6px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .bottom-row {
+      margin-top: 4px;
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.65rem;
+      color: #6b7280;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .bottom-row strong {
+      color: #e5e7eb;
+      font-weight: 500;
+    }
+
+    @media (max-width: 900px) {
+      .core-layout {
+        grid-template-columns: minmax(0, 1fr);
+      }
+      .master {
+        width: 100%;
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-around;
+      }
+      .master-head {
+        text-align: left;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="mixer-shell">
+    <!-- Top bar -->
+    <div class="top-row">
+      <div class="brand-block">
+        <div class="brand-title">DIGITAL MIXER</div>
+        <div class="brand-sub">Prototype UI • 8ch + Master L/R</div>
+      </div>
+
+      <div class="top-middle">
+        <div class="scene-label">
+          <span class="scene-dot"></span>SCENE: MAIN
+        </div>
+        <div class="scene-label">SAMPLING: 48 kHz</div>
+      </div>
+
+      <div class="top-right">
+        <div id="btPill" class="bt-pill">
+          <div class="bt-dot"></div>
+          <div>
+            <div class="bt-main">BLUETOOTH</div>
+            <div class="bt-sub" id="btText">Disconnected</div>
+          </div>
+        </div>
+        <button class="btn btn-main" id="btnMockBT">
+          <span class="btn-icon">🔌</span>
+          <span>จำลองเชื่อมต่อ</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Core mixer -->
+    <div class="core-layout">
+      <!-- Channels -->
+      <div class="channel-scroll" id="chanArea">
+        <!-- CH1 VOCAL L -->
+        <div class="chan" data-channel="1">
+          <div class="chan-header">
+            <div class="chan-top-row">
+              <span class="chan-name">VOC L</span>
+              <span class="chan-num">CH 1</span>
+            </div>
+            <div class="scribble vocal">Vocal L</div>
+          </div>
+
+          <div class="top-btn-row">
+            <div class="btn-square on active">ON</div>
+            <div class="btn-square sel">SEL</div>
+            <div class="btn-square solo">S</div>
+            <div class="btn-square mute">M</div>
+          </div>
+
+          <div class="pan-block">
+            <div class="pan-label-row">
+              <span>L</span>
+              <span>Pan</span>
+              <span>R</span>
+            </div>
+            <div class="pan-knob-row">
+              <div class="pan-knob">
+                <div class="pan-indicator"></div>
+              </div>
+              <div class="pan-value" data-pan>0</div>
+            </div>
+          </div>
+
+          <div class="meter-block" data-meter-block>
+            <div class="meter-ladder" data-meter-ladder>
+              <!-- 14 step -->
+              <div class="meter-step red"></div>
+              <div class="meter-step red"></div>
+              <div class="meter-step yellow"></div>
+              <div class="meter-step yellow"></div>
+              <div class="meter-step green"></div>
+              <div class="meter-step green"></div>
+              <div class="meter-step green"></div>
+              <div class="meter-step green"></div>
+              <div class="meter-step green"></div>
+              <div class="meter-step green"></div>
+              <div class="meter-step green"></div>
+              <div class="meter-step green"></div>
+              <div class="meter-step green"></div>
+              <div class="meter-step green"></div>
+            </div>
+            <div class="meter-scale">
+              <span>0</span>
+              <span>-6</span>
+              <span>-12</span>
+              <span>-18</span>
+              <span>-24</span>
+              <span>-∞</span>
+            </div>
+          </div>
+
+          <div class="fader-wrap">
+            <div class="fader-track">
+              <input type="range" class="fader" min="-60" max="10" step="1" value="-6">
+            </div>
+            <div class="fader-db">
+              <span data-db>-6</span> dB
+            </div>
+          </div>
+
+          <div class="chan-footer">MAIN LR</div>
+        </div>
+
+        <!-- CH2 VOCAL R -->
+        <div class="chan" data-channel="2">
+          <div class="chan-header">
+            <div class="chan-top-row">
+              <span class="chan-name">VOC R</span>
+              <span class="chan-num">CH 2</span>
+            </div>
+            <div class="scribble vocal">Vocal R</div>
+          </div>
+
+          <div class="top-btn-row">
+            <div class="btn-square on active">ON</div>
+            <div class="btn-square sel">SEL</div>
+            <div class="btn-square solo">S</div>
+            <div class="btn-square mute">M</div>
+          </div>
+
+          <div class="pan-block">
+            <div class="pan-label-row">
+              <span>L</span>
+              <span>Pan</span>
+              <span>R</span>
+            </div>
+            <div class="pan-knob-row">
+              <div class="pan-knob">
+                <div class="pan-indicator"></div>
+              </div>
+              <div class="pan-value" data-pan>0</div>
+            </div>
+          </div>
+
+          <div class="meter-block" data-meter-block>
+            <div class="meter-ladder" data-meter-ladder>
+              <div class="meter-step red"></div>
+              <div class="meter-step red"></div>
+              <div class="meter-step yellow"></div>
+              <div class="meter-step yellow"></div>
+              <div class="meter-step green"></div>
+              <div class="meter-step green"></div>
+              <div class="meter-step green"></div>
+              <div class="meter-step green"></div>
+              <div class="meter-step green"></div>
+              <div class="meter-step green"></div>
+              <div class="meter-step green"></div>
+              <div class="meter-step green"></div>
+              <div class="meter-step green"></div>
+              <div class="meter-step green"></div>
+            </div>
+            <div class="meter-scale">
+              <span>0</span>
+              <span>-6</span>
+              <span>-12</span>
+              <span>-18</span>
+              <span>-24</span>
+              <span>-∞</span>
+            </div>
+          </div>
+
+          <div class="fader-wrap">
+            <div class="fader-track">
+              <input type="range" class="fader" min="-60" max="10" step="1" value="-6">
+            </div>
+            <div class="fader-db">
+              <span data-db>-6</span> dB
+            </div>
+          </div>
+
+          <div class="chan-footer">MAIN LR</div>
+        </div>
+
+        <!-- CH3 MUSIC L -->
+        <div class="chan" data-channel="3">
+          <div class="chan-header">
+            <div class="chan-top-row">
+              <span class="chan-name">MUSIC L</span>
+              <span class="chan-num">CH 3</span>
+            </div>
+            <div class="scribble music">Music L</div>
+          </div>
+
+          <div class="top-btn-row">
+            <div class="btn-square on active">ON</div>
+            <div class="btn-square sel">SEL</div>
+            <div class="btn-square solo">S</div>
+            <div class="btn-square mute">M</div>
+          </div>
+
+          <div class="pan-block">
+            <div class="pan-label-row">
+              <span>L</span>
+              <span>Pan</span>
+              <span>R</span>
+            </div>
+            <div class="pan-knob-row">
+              <div class="pan-knob">
+                <div class="pan-indicator"></div>
+              </div>
+              <div class="pan-value" data-pan>0</div>
+            </div>
+          </div>
+
+          <div class="meter-block" data-meter-block>
+            <div class="meter-ladder" data-meter-ladder>
+              <div class="meter-step red"></div>
+              <div class="meter-step red"></div>
+              <div class="meter-step yellow"></div>
+              <div class="meter-step yellow"></div>
+              <div class="meter-step green"></div>
+              <div class="meter-step green"></div>
+              <div class="meter-step green"></div>
+              <div class="meter-step green"></div>
+              <div class="meter-step green"></div>
+              <div class="meter-step green"></div>
+              <div class="meter-step green"></div>
+              <div class="meter-step green"></div>
+              <div class="meter-step green"></div>
+              <div class="meter-step green"></div>
+            </div>
+            <div class="meter-scale">
+              <span>0</span>
+              <span>-6</span>
+              <span>-12</span>
+              <span>-18</span>
+              <span>-24</span>
+              <span>-∞</span>
+            </div>
+          </div>
+
+          <div class="fader-wrap">
+            <div class="fader-track">
+              <input type="range" class="fader" min="-60" max="10" step="1" value="-10">
+            </div>
+            <div class="fader-db">
+              <span data-db>-10</span> dB
+            </div>
+          </div>
+
+          <div class="chan-footer">MAIN LR</div>
+        </div>
+
+        <!-- CH4 MUSIC R -->
+        <div class="chan" data-channel="4">
+          <div class="chan-header">
+            <div class="chan-top-row">
+              <span class="chan-name">MUSIC R</span>
+              <span class="chan-num">CH 4</span>
+            </div>
+            <div class="scribble music">Music R</div>
+          </div>
+
+          <div class="top-btn-row">
+            <div class="btn-square on active">ON</div>
+            <div class="btn-square sel">SEL</div>
+            <div class="btn-square solo">S</div>
+            <div class="btn-square mute">M</div>
+          </div>
+
+          <div class="pan-block">
+            <div class="pan-label-row">
+              <span>L</span>
+              <span>Pan</span>
+              <span>R</span>
+            </div>
+            <div class="pan-knob-row">
+              <div class="pan-knob">
+                <div class="pan-indicator"></div>
+              </div>
+              <div class="pan-value" data-pan>0</div>
+            </div>
+          </div>
+
+          <div class="meter-block" data-meter-block>
+            <div class="meter-ladder" data-meter-ladder>
+              <div class="meter-step red"></div>
+              <div class="meter-step red"></div>
+              <div class="meter-step yellow"></div>
+              <div class="meter-step yellow"></div>
+              <div class="meter-step green"></div>
+              <div class="meter-step green"></div>
+              <div class="meter-step green"></div>
+              <div class="meter-step green"></div>
+              <div class="meter-step green"></div>
+              <div class="meter-step green"></div>
+              <div class="meter-step green"></div>
+              <div class="meter-step green"></div>
+              <div class="meter-step green"></div>
+              <div class="meter-step green"></div>
+            </div>
+            <div class="meter-scale">
+              <span>0</span>
+              <span>-6</span>
+              <span>-12</span>
+              <span>-18</span>
+              <span>-24</span>
+              <span>-∞</span>
+            </div>
+          </div>
+
+          <div class="fader-wrap">
+            <div class="fader-track">
+              <input type="range" class="fader" min="-60" max="10" step="1" value="-10">
+            </div>
+            <div class="fader-db">
+              <span data-db>-10</span> dB
+            </div>
+          </div>
+
+          <div class="chan-footer">MAIN LR</div>
+        </div>
+
+        <!-- CH5–8 Generic -->
+        <!-- ใช้ template เดิม เปลี่ยนชื่ออย่างเดียว -->
+        <div class="chan" data-channel="5">
+          <div class="chan-header">
+            <div class="chan-top-row">
+              <span class="chan-name">INPUT</span>
+              <span class="chan-num">CH 5</span>
+            </div>
+            <div class="scribble generic">CH 5</div>
+          </div>
+
+          <div class="top-btn-row">
+            <div class="btn-square on active">ON</div>
+            <div class="btn-square sel">SEL</div>
+            <div class="btn-square solo">S</div>
+            <div class="btn-square mute">M</div>
+          </div>
+
+          <div class="pan-block">
+            <div class="pan-label-row">
+              <span>L</span>
+              <span>Pan</span>
+              <span>R</span>
+            </div>
+            <div class="pan-knob-row">
+              <div class="pan-knob">
+                <div class="pan-indicator"></div>
+              </div>
+              <div class="pan-value" data-pan>0</div>
+            </div>
+          </div>
+
+          <div class="meter-block" data-meter-block>
+            <div class="meter-ladder" data-meter-ladder>
+              <div class="meter-step red"></div>
+              <div class="meter-step red"></div>
+              <div class="meter-step yellow"></div>
+              <div class="meter-step yellow"></div>
+              <div class="meter-step green"></div>
+              <div class="meter-step green"></div>
+              <div class="meter-step green"></div>
+              <div class="meter-step green"></div>
+              <div class="meter-step green"></div>
+              <div class="meter-step green"></div>
+              <div class="meter-step green"></div>
+              <div class="meter-step green"></div>
+              <div class="meter-step green"></div>
+              <div class="meter-step green"></div>
+            </div>
+            <div class="meter-scale">
+              <span>0</span>
+              <span>-6</span>
+              <span>-12</span>
+              <span>-18</span>
+              <span>-24</span>
+              <span>-∞</span>
+            </div>
+          </div>
+
+          <div class="fader-wrap">
+            <div class="fader-track">
+              <input type="range" class="fader" min="-60" max="10" step="1" value="-12">
+            </div>
+            <div class="fader-db">
+              <span data-db>-12</span> dB
+            </div>
+          </div>
+
+          <div class="chan-footer">MAIN LR</div>
+        </div>
+
+        <div class="chan" data-channel="6">
+          <div class="chan-header">
+            <div class="chan-top-row">
+              <span class="chan-name">INPUT</span>
+              <span class="chan-num">CH 6</span>
+            </div>
+            <div class="scribble generic">CH 6</div>
+          </div>
+
+          <div class="top-btn-row">
+            <div class="btn-square on active">ON</div>
+            <div class="btn-square sel">SEL</div>
+            <div class="btn-square solo">S</div>
+            <div class="btn-square mute">M</div>
+          </div>
+
+          <div class="pan-block">
+            <div class="pan-label-row">
+              <span>L</span>
+              <span>Pan</span>
+              <span>R</span>
+            </div>
+            <div class="pan-knob-row">
+              <div class="pan-knob">
+                <div class="pan-indicator"></div>
+              </div>
+              <div class="pan-value" data-pan>0</div>
+            </div>
+          </div>
+
+          <div class="meter-block" data-meter-block>
+            <div class="meter-ladder" data-meter-ladder>
+              <div class="meter-step red"></div>
+              <div class="meter-step red"></div>
+              <div class="meter-step yellow"></div>
+              <div class="meter-step yellow"></div>
+              <div class="meter-step green"></div>
+              <div class="meter-step green"></div>
+              <div class="meter-step green"></div>
+              <div class="meter-step green"></div>
+              <div class="meter-step green"></div>
+              <div class="meter-step green"></div>
+              <div class="meter-step green"></div>
+              <div class="meter-step green"></div>
+              <div class="meter-step green"></div>
+              <div class="meter-step green"></div>
+            </div>
+            <div class="meter-scale">
+              <span>0</span>
+              <span>-6</span>
+              <span>-12</span>
+              <span>-18</span>
+              <span>-24</span>
+              <span>-∞</span>
+            </div>
+          </div>
+
+          <div class="fader-wrap">
+            <div class="fader-track">
+              <input type="range" class="fader" min="-60" max="10" step="1" value="-12">
+            </div>
+            <div class="fader-db">
+              <span data-db>-12</span> dB
+            </div>
+          </div>
+
+          <div class="chan-footer">MAIN LR</div>
+        </div>
+
+        <div class="chan" data-channel="7">
+          <div class="chan-header">
+            <div class="chan-top-row">
+              <span class="chan-name">FX RTN</span>
+              <span class="chan-num">CH 7</span>
+            </div>
+            <div class="scribble generic">FX 1</div>
+          </div>
+
+          <div class="top-btn-row">
+            <div class="btn-square on active">ON</div>
+            <div class="btn-square sel">SEL</div>
+            <div class="btn-square solo">S</div>
+            <div class="btn-square mute">M</div>
+          </div>
+
+          <div class="pan-block">
+            <div class="pan-label-row">
+              <span>L</span>
+              <span>Pan</span>
+              <span>R</span>
+            </div>
+            <div class="pan-knob-row">
+              <div class="pan-knob">
+                <div class="pan-indicator"></div>
+              </div>
+              <div class="pan-value" data-pan>0</div>
+            </div>
+          </div>
+
+          <div class="meter-block" data-meter-block>
+            <div class="meter-ladder" data-meter-ladder>
+              <div class="meter-step red"></div>
+              <div class="meter-step red"></div>
+              <div class="meter-step yellow"></div>
+              <div class="meter-step yellow"></div>
+              <div class="meter-step green"></div>
+              <div class="meter-step green"></div>
+              <div class="meter-step green"></div>
+              <div class="meter-step green"></div>
+              <div class="meter-step green"></div>
+              <div class="meter-step green"></div>
+              <div class="meter-step green"></div>
+              <div class="meter-step green"></div>
+              <div class="meter-step green"></div>
+              <div class="meter-step green"></div>
+            </div>
+            <div class="meter-scale">
+              <span>0</span>
+              <span>-6</span>
+              <span>-12</span>
+              <span>-18</span>
+              <span>-24</span>
+              <span>-∞</span>
+            </div>
+          </div>
+
+          <div class="fader-wrap">
+            <div class="fader-track">
+              <input type="range" class="fader" min="-60" max="10" step="1" value="-18">
+            </div>
+            <div class="fader-db">
+              <span data-db>-18</span> dB
+            </div>
+          </div>
+
+          <div class="chan-footer">MAIN LR</div>
+        </div>
+
+        <div class="chan" data-channel="8">
+          <div class="chan-header">
+            <div class="chan-top-row">
+              <span class="chan-name">FX RTN</span>
+              <span class="chan-num">CH 8</span>
+            </div>
+            <div class="scribble generic">FX 2</div>
+          </div>
+
+          <div class="top-btn-row">
+            <div class="btn-square on active">ON</div>
+            <div class="btn-square sel">SEL</div>
+            <div class="btn-square solo">S</div>
+            <div class="btn-square mute">M</div>
+          </div>
+
+          <div class="pan-block">
+            <div class="pan-label-row">
+              <span>L</span>
+              <span>Pan</span>
+              <span>R</span>
+            </div>
+            <div class="pan-knob-row">
+              <div class="pan-knob">
+                <div class="pan-indicator"></div>
+              </div>
+              <div class="pan-value" data-pan>0</div>
+            </div>
+          </div>
+
+          <div class="meter-block" data-meter-block>
+            <div class="meter-ladder" data-meter-ladder>
+              <div class="meter-step red"></div>
+              <div class="meter-step red"></div>
+              <div class="meter-step yellow"></div>
+              <div class="meter-step yellow"></div>
+              <div class="meter-step green"></div>
+              <div class="meter-step green"></div>
+              <div class="meter-step green"></div>
+              <div class="meter-step green"></div>
+              <div class="meter-step green"></div>
+              <div class="meter-step green"></div>
+              <div class="meter-step green"></div>
+              <div class="meter-step green"></div>
+              <div class="meter-step green"></div>
+              <div class="meter-step green"></div>
+            </div>
+            <div class="meter-scale">
+              <span>0</span>
+              <span>-6</span>
+              <span>-12</span>
+              <span>-18</span>
+              <span>-24</span>
+              <span>-∞</span>
+            </div>
+          </div>
+
+          <div class="fader-wrap">
+            <div class="fader-track">
+              <input type="range" class="fader" min="-60" max="10" step="1" value="-18">
+            </div>
+            <div class="fader-db">
+              <span data-db>-18</span> dB
+            </div>
+          </div>
+
+          <div class="chan-footer">MAIN LR</div>
+        </div>
+      </div>
+
+      <!-- Master -->
+      <div class="master">
+        <div class="master-head">
+          <div class="master-title">MASTER LR</div>
+          <div class="master-sub">MAIN MIX OUT</div>
+        </div>
+
+        <div class="master-meter-block">
+          <div class="master-ladder" data-master-ladder="L">
+            <!-- 16 step -->
+            <div class="master-step red"></div>
+            <div class="master-step red"></div>
+            <div class="master-step yellow"></div>
+            <div class="master-step yellow"></div>
+            <div class="master-step green"></div>
+            <div class="master-step green"></div>
+            <div class="master-step green"></div>
+            <div class="master-step green"></div>
+            <div class="master-step green"></div>
+            <div class="master-step green"></div>
+            <div class="master-step green"></div>
+            <div class="master-step green"></div>
+            <div class="master-step green"></div>
+            <div class="master-step green"></div>
+            <div class="master-step green"></div>
+            <div class="master-step green"></div>
+          </div>
+          <div class="master-ladder" data-master-ladder="R">
+            <div class="master-step red"></div>
+            <div class="master-step red"></div>
+            <div class="master-step yellow"></div>
+            <div class="master-step yellow"></div>
+            <div class="master-step green"></div>
+            <div class="master-step green"></div>
+            <div class="master-step green"></div>
+            <div class="master-step green"></div>
+            <div class="master-step green"></div>
+            <div class="master-step green"></div>
+            <div class="master-step green"></div>
+            <div class="master-step green"></div>
+            <div class="master-step green"></div>
+            <div class="master-step green"></div>
+            <div class="master-step green"></div>
+            <div class="master-step green"></div>
+          </div>
+          <div class="master-scale">
+            <span>0</span>
+            <span>-3</span>
+            <span>-6</span>
+            <span>-9</span>
+            <span>-12</span>
+            <span>-18</span>
+            <span>-24</span>
+            <span>-∞</span>
+          </div>
+        </div>
+
+        <div class="master-fader-wrap">
+          <div class="fader-track">
+            <input type="range" class="fader" id="masterFader" min="-60" max="10" step="1" value="-3">
+          </div>
+          <div class="fader-db">
+            Master: <span id="masterDb">-3</span> dB
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="bottom-row">
+      <div><strong>Note:</strong> ตอนนี้เป็น UI จำลอง ยังไม่ได้ต่อเสียงจริง/บอร์ดจริง</div>
+      <div>ขั้นต่อไป: เอาค่า dB แต่ละแชนแนล + Master ส่งให้ ESP32 ผ่าน BLE/Wi-Fi</div>
+    </div>
+  </div>
+
+  <script>
+    // map dB to number of steps to light
+    function dbToSteps(db, totalSteps) {
+      const minDb = -60;
+      const maxDb = 0;
+      if (db <= minDb) return 0;
+      const clamped = Math.min(db, maxDb);
+      const ratio = (clamped - minDb) / (maxDb - minDb);
+      return Math.round(ratio * totalSteps);
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+      // Channel logic
+      document.querySelectorAll(".chan").forEach(chan => {
+        const fader = chan.querySelector(".fader");
+        const dbSpan = chan.querySelector("[data-db]");
+        const ladder = chan.querySelector("[data-meter-ladder]");
+        const steps = ladder ? Array.from(ladder.querySelectorAll(".meter-step")) : [];
+        const btnOn = chan.querySelector(".btn-square.on");
+        const btnSel = chan.querySelector(".btn-square.sel");
+        const btnSolo = chan.querySelector(".btn-square.solo");
+        const btnMute = chan.querySelector(".btn-square.mute");
+
+        // Fader -> meter
+        function applyFader() {
+          const db = Number(fader.value);
+          dbSpan.textContent = db.toString();
+
+          const activeCount = dbToSteps(db, steps.length);
+          steps.forEach((step, idx) => {
+            if (idx < activeCount) {
+              step.classList.add("active");
+            } else {
+              step.classList.remove("active");
+            }
+          });
+        }
+
+        if (fader) {
+          fader.addEventListener("input", () => {
+            applyFader();
+            // จุดที่เอาไปส่งบอร์ดในอนาคต
+            // console.log("CH", chan.dataset.channel, "dB =", fader.value);
+          });
+          applyFader();
+        }
+
+        // Top buttons
+        if (btnOn) {
+          btnOn.addEventListener("click", () => {
+            btnOn.classList.toggle("active");
+          });
+        }
+        if (btnSel) {
+          btnSel.addEventListener("click", () => {
+            btnSel.classList.toggle("active");
+          });
+        }
+        if (btnSolo) {
+          btnSolo.addEventListener("click", () => {
+            btnSolo.classList.toggle("active");
+          });
+        }
+        if (btnMute) {
+          btnMute.addEventListener("click", () => {
+            btnMute.classList.toggle("active");
+          });
+        }
+      });
+
+      // Master logic
+      const masterFader = document.getElementById("masterFader");
+      const masterDb = document.getElementById("masterDb");
+      const masterLadders = document.querySelectorAll("[data-master-ladder]");
+
+      function applyMaster() {
+        const db = Number(masterFader.value);
+        masterDb.textContent = db.toString();
+
+        masterLadders.forEach(ladder => {
+          const steps = Array.from(ladder.querySelectorAll(".master-step"));
+          const activeCount = dbToSteps(db, steps.length);
+          steps.forEach((step, idx) => {
+            if (idx < activeCount) {
+              step.classList.add("active");
+            } else {
+              step.classList.remove("active");
+            }
+          });
+        });
+      }
+
+      if (masterFader) {
+        masterFader.addEventListener("input", () => {
+          applyMaster();
+          // console.log("MASTER dB =", masterFader.value);
+        });
+        applyMaster();
+      }
+
+      // Mock Bluetooth
+      const btPill = document.getElementById("btPill");
+      const btText = document.getElementById("btText");
+      const btnMockBT = document.getElementById("btnMockBT");
+
+      if (btnMockBT && btPill && btText) {
+        btnMockBT.addEventListener("click", () => {
+          const connected = btPill.classList.toggle("connected");
+          btText.textContent = connected ? "Connected (Mock)" : "Disconnected";
+        });
+      }
+    });
+  </script>
+</body>
+</html>
