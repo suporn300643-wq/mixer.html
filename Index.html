@@ -1,1337 +1,317 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
-  <meta charset="UTF-8">
-  <title>Digital Mixer + EQ</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <title>Gemaudio 2.1 Digital Mixer</title>
   <style>
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-    }
-
+    * { box-sizing: border-box; font-family: system-ui, sans-serif; }
     body {
-      background: #111827;
-      color: #e5e7eb;
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 8px;
+      margin: 0;
+      background: #111;
+      color: #eee;
     }
-
-    .app-window {
-      width: 100%;
-      max-width: 1320px;
-      max-height: 96vh;
-      background: #020617;
-      border-radius: 10px;
-      box-shadow:
-        0 24px 60px rgba(0,0,0,0.9),
-        0 0 0 1px #1f2937;
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-    }
-
-    /* Top "title bar" */
-    .title-bar {
-      height: 26px;
-      background: linear-gradient(90deg,#0b1120,#020617);
+    header {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 0 10px;
-      border-bottom: 1px solid #1f2937;
-      font-size: 0.75rem;
+      padding: 10px 20px;
+      background: #181818;
+      border-bottom: 1px solid #333;
     }
-
-    .title-left {
-      display: flex;
-      align-items: center;
-      gap: 8px;
+    header h1 {
+      font-size: 18px;
+      margin: 0;
     }
-
-    .win-dots {
-      display: flex;
-      gap: 4px;
+    #status {
+      font-size: 14px;
+      margin-left: 10px;
     }
-    .win-dot {
-      width: 9px;
-      height: 9px;
-      border-radius: 999px;
-      background: #4b5563;
+    #status span {
+      display: inline-block;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      margin-right: 4px;
+      background: #c33;
     }
-    .win-dot.red { background:#ef4444; }
-    .win-dot.yellow { background:#eab308; }
-    .win-dot.green { background:#22c55e; }
-
-    .title-center {
-      display: flex;
-      gap: 8px;
-      align-items: center;
+    #status.connected span {
+      background: #3c3;
     }
-
-    .tab {
-      padding: 3px 10px;
-      border-radius: 3px 3px 0 0;
-      background: #020617;
-      border: 1px solid #0f172a;
-      border-bottom: none;
-      font-size: 0.7rem;
-      text-transform: uppercase;
-      letter-spacing: 0.12em;
-      color: #9ca3af;
-    }
-
-    .tab.active {
-      background: #111827;
-      color: #e5e7eb;
-    }
-
-    .title-right {
-      font-size: 0.7rem;
-      color: #9ca3af;
-    }
-
-    /* Main layout: top processing + mixer + EQ */
-    .main {
-      flex: 1;
-      display: grid;
-      grid-template-rows: 160px minmax(0,1fr) 220px;
-      background: #020617;
-    }
-
-    /* PROCESSING SECTION (บนสุด) */
-    .processing-row {
-      display: grid;
-      grid-template-columns: 260px minmax(0,1fr) 260px;
-      padding: 6px 10px 4px;
-      gap: 8px;
-      background: #030712;
-      border-bottom: 1px solid #0f172a;
-    }
-
-    .proc-panel {
+    button {
+      padding: 6px 14px;
       border-radius: 6px;
-      background: radial-gradient(circle at top, #020617, #020617 60%, #020617 100%);
-      border: 1px solid #111827;
-      padding: 6px 8px;
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-    }
-
-    .proc-title {
-      font-size: 0.7rem;
-      text-transform: uppercase;
-      letter-spacing: 0.14em;
-      color: #9ca3af;
-    }
-
-    .proc-body {
-      flex: 1;
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0,1fr));
-      gap: 6px;
-      margin-top: 4px;
-    }
-
-    .small-meter-block {
-      border-radius: 4px;
-      border: 1px solid #1f2937;
-      padding: 4px;
-      background: #020617;
-      display: grid;
-      grid-template-rows: auto 1fr auto;
-      gap: 2px;
-    }
-
-    .small-meter-title {
-      font-size: 0.65rem;
-      text-transform: uppercase;
-      letter-spacing: 0.16em;
-    }
-
-    .small-meter {
-      display: flex;
-      align-items: flex-end;
-      gap: 3px;
-    }
-
-    .small-meter-bar {
-      flex: 1;
-      height: 100%;
-      border-radius: 999px;
-      background: #020617;
-      box-shadow: inset 0 0 4px rgba(0,0,0,0.8);
-      position: relative;
-      overflow: hidden;
-    }
-
-    .small-meter-fill {
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      width: 100%;
-      height: 40%;
-      border-radius: inherit;
-      background: linear-gradient(to top,#22c55e,#22d3ee);
-      box-shadow: 0 0 10px rgba(45,212,191,0.7);
-      transition: height .1s linear;
-    }
-
-    .small-meter-scale {
-      font-size: 0.6rem;
-      color: #6b7280;
-      text-align: right;
-    }
-
-    .proc-buttons {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 4px;
-      margin-top: 2px;
-    }
-
-    .btn-mini {
-      border-radius: 3px;
-      padding: 3px 6px;
-      border: 1px solid #4b5563;
-      background: #020617;
-      font-size: 0.6rem;
-      text-transform: uppercase;
-      letter-spacing: 0.12em;
-      color: #cbd5f5;
+      border: none;
+      background: #2d7dff;
+      color: #fff;
       cursor: pointer;
+      font-size: 14px;
     }
+    button:active { transform: scale(0.97); }
 
-    .btn-mini.active {
-      background: #22c55e;
-      border-color: #22c55e;
-      color: #020617;
+    main {
+      display: flex;
+      gap: 20px;
+      padding: 20px;
     }
-
-    .bt-pill {
-      display: inline-flex;
+    .strip {
+      flex: 1;
+      background: #181818;
+      border-radius: 10px;
+      padding: 10px;
+      border: 1px solid #333;
+      display: flex;
+      flex-direction: column;
       align-items: center;
-      gap: 6px;
-      padding: 3px 8px;
-      border-radius: 999px;
-      border: 1px solid #1d4ed8;
-      background: radial-gradient(circle at top,#1f2937,#020617);
-      font-size: 0.65rem;
     }
-
-    .bt-dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 999px;
-      background: #ef4444;
-      box-shadow: 0 0 10px rgba(239,68,68,0.8);
+    .strip h2 {
+      font-size: 16px;
+      margin: 5px 0 10px;
     }
-
-    .bt-pill.connected .bt-dot {
-      background:#22c55e;
-      box-shadow: 0 0 10px rgba(34,197,94,0.9);
-    }
-
-    /* MIXER ROW (กลาง) */
-    .mixer-row {
-      display: grid;
-      grid-template-columns: minmax(0,1fr) 180px;
-      background: #020617;
-      border-bottom: 1px solid #0f172a;
-    }
-
-    .channel-scroll {
-      overflow-x: auto;
-      padding: 6px 6px 4px;
+    .faders {
       display: flex;
-      gap: 6px;
+      gap: 14px;
     }
-    .channel-scroll::-webkit-scrollbar {
-      height: 6px;
-    }
-    .channel-scroll::-webkit-scrollbar-thumb {
-      background:#111827;
-      border-radius: 999px;
-    }
-
-    .chan {
-      min-width: 80px;
-      max-width: 80px;
-      background: linear-gradient(180deg,#020617,#020617 60%,#020617 100%);
-      border-radius: 8px;
-      border: 1px solid #111827;
-      box-shadow: 0 10px 18px rgba(0,0,0,0.8);
-      padding: 4px 4px 6px;
-      display: flex;
-      flex-direction: column;
-      align-items: stretch;
-    }
-
-    .ch-header {
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-    }
-
-    .ch-top {
-      display: flex;
-      justify-content: space-between;
-      font-size: 0.65rem;
-    }
-
-    .ch-name {
-      text-transform: uppercase;
-      letter-spacing: 0.12em;
-    }
-    .ch-num {
-      color: #9ca3af;
-    }
-
-    .ch-tag {
-      margin-top: 2px;
-      font-size: 0.63rem;
-      text-align: center;
-      border-radius: 3px;
-      padding: 1px 2px;
-      background: linear-gradient(90deg,#22c55e,#4ade80);
-      color: #020617;
-      font-weight: 600;
-    }
-    .ch-tag.vocal {
-      background: linear-gradient(90deg,#fb7185,#f97316);
-    }
-    .ch-tag.music {
-      background: linear-gradient(90deg,#60a5fa,#22d3ee);
-    }
-
-    .ch-buttons {
-      margin-top: 4px;
-      display: grid;
-      grid-template-columns: repeat(2,1fr);
-      gap: 3px;
-    }
-
-    .btn-square {
-      border-radius: 3px;
-      border: 1px solid #4b5563;
-      background:#020617;
-      font-size: 0.6rem;
-      text-align: center;
-      padding: 2px 0;
-      text-transform: uppercase;
-      letter-spacing: .08em;
-      color:#d1d5db;
-      cursor:pointer;
-    }
-    .btn-square.on.active {
-      background:#22c55e;
-      border-color:#22c55e;
-      color:#020617;
-    }
-    .btn-square.mute.active {
-      background:#f97373;
-      border-color:#f97373;
-      color:#020617;
-    }
-    .btn-square.solo.active,
-    .btn-square.sel.active {
-      background:#3b82f6;
-      border-color:#3b82f6;
-      color:#e5e7eb;
-    }
-
-    .ch-meter {
-      margin-top:4px;
-      display:flex;
-      gap:2px;
-      height:70px;
-      border-radius:4px;
-      border:1px solid #111827;
-      padding:3px;
-      background:#020617;
-    }
-
-    .meter-ladder {
-      flex:1;
-      display:flex;
-      flex-direction:column-reverse;
-      gap:2px;
-    }
-
-    .meter-step {
-      height:4px;
-      border-radius:999px;
-      background:#020617;
-      box-shadow:inset 0 0 2px rgba(0,0,0,0.9);
-      opacity:.3;
-      transition:.08s opacity,.08s box-shadow,.08s background;
-    }
-    .meter-step.green { background:#22c55e; }
-    .meter-step.yellow { background:#eab308; }
-    .meter-step.red { background:#f97316; }
-    .meter-step.active {
-      opacity:1;
-      box-shadow:0 0 6px rgba(45,212,191,0.8);
-    }
-    .meter-step.yellow.active {
-      box-shadow:0 0 6px rgba(234,179,8,0.85);
-    }
-    .meter-step.red.active {
-      box-shadow:0 0 6px rgba(249,115,22,0.9);
-    }
-
-    .meter-scale {
-      width:16px;
-      font-size:0.55rem;
-      color:#6b7280;
-      display:flex;
-      flex-direction:column;
-      justify-content:space-between;
-      text-align:right;
-    }
-
-    .fader-wrap {
-      margin-top:5px;
-      padding-top:4px;
-      border-top:1px solid #020617;
-      display:flex;
-      flex-direction:column;
-      align-items:center;
-      gap:3px;
-    }
-
-    .fader-track {
-      height:110px;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-    }
-
     .fader {
-      -webkit-appearance:none;
-      appearance:none;
-      width:110px;
-      height:26px;
-      transform:rotate(-90deg);
-      background:transparent;
-      outline:none;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      font-size: 12px;
     }
-    .fader::-webkit-slider-runnable-track {
-      height:6px;
-      background:linear-gradient(90deg,#0f172a,#4b5563,#9ca3af);
-      border-radius:999px;
-      box-shadow:inset 0 0 4px rgba(0,0,0,0.7);
+    .fader label {
+      margin-bottom: 6px;
     }
-    .fader::-webkit-slider-thumb {
-      -webkit-appearance:none;
-      appearance:none;
-      width:18px;
-      height:18px;
-      border-radius:3px;
-      background:linear-gradient(180deg,#f9fafb,#9ca3af);
-      border:1px solid #e5e7eb;
-      box-shadow:0 0 0 2px rgba(15,23,42,0.9),0 6px 10px rgba(0,0,0,1);
-      margin-top:-6px;
+    .fader input[type="range"] {
+      writing-mode: bt-lr;
+      -webkit-appearance: slider-vertical;
+      width: 30px;
+      height: 140px;
     }
-    .fader::-moz-range-track {
-      height:6px;
-      background:linear-gradient(90deg,#0f172a,#4b5563,#9ca3af);
-      border-radius:999px;
+    .value {
+      margin-top: 4px;
+      font-size: 11px;
+      color: #aaa;
     }
-    .fader::-moz-range-thumb {
-      width:18px;
-      height:18px;
-      border-radius:3px;
-      background:linear-gradient(180deg,#f9fafb,#9ca3af);
-      border:1px solid #e5e7eb;
-      box-shadow:0 0 0 2px rgba(15,23,42,0.9),0 6px 10px rgba(0,0,0,1);
+    .strip .buttons {
+      margin-top: 10px;
+      display: flex;
+      gap: 8px;
+    }
+    .strip .buttons button {
+      font-size: 12px;
+      padding: 4px 10px;
+      background: #333;
+    }
+    .strip .buttons button.active {
+      background: #ff5555;
     }
 
-    .fader-db {
-      font-size:0.7rem;
-      font-variant-numeric:tabular-nums;
+    footer {
+      padding: 10px 20px 16px;
+      border-top: 1px solid #333;
+      background: #181818;
+      font-size: 12px;
+      color: #aaa;
     }
-
-    .ch-footer {
-      margin-top:2px;
-      font-size:0.55rem;
-      text-align:center;
-      color:#6b7280;
-      text-transform:uppercase;
-      letter-spacing:.12em;
+    #vu {
+      height: 8px;
+      background: #333;
+      border-radius: 4px;
+      overflow: hidden;
+      margin-bottom: 6px;
     }
-
-    /* RIGHT: master + buses */
-    .side-master {
-      border-left:1px solid #0f172a;
-      padding:6px 6px 4px;
-      display:flex;
-      flex-direction:column;
-      gap:6px;
-      background:#020617;
+    #vu-inner {
+      height: 100%;
+      width: 20%;
+      background: linear-gradient(90deg, #3c3, #cc3, #c33);
+      transition: width 0.1s;
     }
-
-    .side-panel {
-      border-radius:6px;
-      border:1px solid #111827;
-      background:#020617;
-      padding:4px 5px 6px;
-    }
-
-    .side-title {
-      font-size:0.7rem;
-      text-transform:uppercase;
-      letter-spacing:.14em;
-      margin-bottom:3px;
-      color:#9ca3af;
-    }
-
-    .master-meters {
-      display:flex;
-      gap:4px;
-      margin-top:4px;
-    }
-
-    .master-ladder {
-      flex:1;
-      display:flex;
-      flex-direction:column-reverse;
-      gap:2px;
-      padding:4px 2px;
-      border-radius:8px;
-      border:1px solid #111827;
-      background:#020617;
-    }
-    .master-step {
-      height:5px;
-      border-radius:999px;
-      background:#020617;
-      opacity:.3;
-      box-shadow:inset 0 0 2px rgba(0,0,0,0.9);
-      transition:.08s opacity,.08s box-shadow,.08s background;
-    }
-    .master-step.green { background:#22c55e; }
-    .master-step.yellow { background:#eab308; }
-    .master-step.red { background:#f97316; }
-    .master-step.active {
-      opacity:1;
-      box-shadow:0 0 6px rgba(45,212,191,0.85);
-    }
-    .master-step.yellow.active {
-      box-shadow:0 0 6px rgba(234,179,8,0.9);
-    }
-    .master-step.red.active {
-      box-shadow:0 0 6px rgba(249,115,22,0.9);
-    }
-
-    .master-scale {
-      width:18px;
-      font-size:0.55rem;
-      color:#6b7280;
-      display:flex;
-      flex-direction:column;
-      justify-content:space-between;
-      text-align:right;
-    }
-
-    .master-fader-wrap {
-      margin-top:4px;
-      border-top:1px solid #020617;
-      padding-top:4px;
-      display:flex;
-      flex-direction:column;
-      align-items:center;
-      gap:3px;
-    }
-
-    /* EQ SECTION (ล่างสุด) */
-    .eq-row {
-      background:#020617;
-      padding:6px 10px 8px;
-      display:grid;
-      grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);
-      gap:8px;
-    }
-
-    .eq-panel {
-      border-radius:6px;
-      border:1px solid #111827;
-      background:#020617;
-      padding:4px 6px 6px;
-      display:flex;
-      flex-direction:column;
-      gap:4px;
-    }
-
-    .eq-title-row {
-      display:flex;
-      justify-content:space-between;
-      align-items:center;
-      font-size:0.7rem;
-    }
-
-    .eq-title {
-      text-transform:uppercase;
-      letter-spacing:.16em;
-      color:#9ca3af;
-    }
-
-    .eq-curve-box {
-      margin-top:2px;
-      flex:1;
-      border-radius:4px;
-      border:1px solid #111827;
-      background:radial-gradient(circle at top,#020617,#020617 60%,#020617 100%);
-      position:relative;
-      overflow:hidden;
-    }
-
-    .eq-svg {
-      width:100%;
-      height:100%;
-      display:block;
-    }
-
-    .eq-grid-line {
-      stroke:#1f2937;
-      stroke-width:1;
-      stroke-dasharray:4 4;
-    }
-
-    .eq-curve {
-      fill:rgba(234,179,8,0.35);
-      stroke:#eab308;
-      stroke-width:2;
-    }
-
-    .eq-point {
-      stroke:#020617;
-      stroke-width:1.5;
-    }
-
-    .eq-band-list {
-      display:flex;
-      gap:4px;
-      margin-top:4px;
-      overflow-x:auto;
-      padding-bottom:2px;
-    }
-
-    .eq-band-card {
-      min-width:110px;
-      border-radius:4px;
-      border:1px solid #111827;
-      background:#020617;
-      padding:4px;
-      font-size:0.65rem;
-    }
-
-    .eq-band-head {
-      display:flex;
-      justify-content:space-between;
-      margin-bottom:2px;
-    }
-
-    .badge {
-      border-radius:999px;
-      padding:1px 5px;
-      font-size:0.6rem;
-      text-transform:uppercase;
-      letter-spacing:.12em;
-    }
-
-    .badge.type {
-      background:#111827;
-      color:#9ca3af;
-    }
-
-    .badge.band {
-      background:#22c55e;
-      color:#020617;
-    }
-
-    .eq-control {
-      margin-top:3px;
-      display:flex;
-      flex-direction:column;
-      gap:2px;
-    }
-
-    .eq-label {
-      display:flex;
-      justify-content:space-between;
-      color:#9ca3af;
-    }
-
-    .eq-slider {
-      -webkit-appearance:none;
-      appearance:none;
-      width:100%;
-      height:3px;
-      background:#111827;
-      border-radius:999px;
-      margin-top:2px;
-    }
-
-    .eq-slider::-webkit-slider-thumb {
-      -webkit-appearance:none;
-      appearance:none;
-      width:10px;
-      height:10px;
-      border-radius:999px;
-      background:#eab308;
-      border:1px solid #facc15;
-      box-shadow:0 0 4px rgba(250,204,21,0.9);
-    }
-
-    /* EQ PARAM PANEL (ขวา) */
-    .eq-param-panel {
-      border-radius:6px;
-      border:1px solid #111827;
-      background:#020617;
-      padding:4px 6px;
-      display:flex;
-      flex-direction:column;
-      gap:4px;
-      font-size:0.7rem;
-    }
-
-    .eq-param-title {
-      text-transform:uppercase;
-      letter-spacing:.16em;
-      color:#9ca3af;
-    }
-
-    .eq-param-grid {
-      margin-top:4px;
-      display:grid;
-      grid-template-columns:repeat(3,minmax(0,1fr));
-      gap:4px;
-    }
-
-    .param-box {
-      border-radius:4px;
-      border:1px solid #111827;
-      background:#020617;
-      padding:3px;
-      display:flex;
-      flex-direction:column;
-      gap:2px;
-    }
-
-    .param-label {
-      font-size:0.6rem;
-      color:#9ca3af;
-    }
-
-    .param-value {
-      font-size:0.8rem;
-      font-variant-numeric:tabular-nums;
-    }
-
-    .param-active {
-      color:#facc15;
-    }
-
-    .note-bar {
-      font-size:0.65rem;
-      color:#6b7280;
-      margin-top:2px;
-    }
-
-    @media(max-width:960px){
-      .main {
-        grid-template-rows:140px minmax(0,1fr) 260px;
-      }
-      .processing-row {
-        grid-template-columns: minmax(0,1fr);
-        grid-auto-rows:auto;
-      }
-      .eq-row {
-        grid-template-columns:minmax(0,1fr);
-      }
+    #log {
+      font-family: monospace;
+      max-height: 60px;
+      overflow-y: auto;
+      white-space: pre-line;
     }
   </style>
 </head>
 <body>
-<div class="app-window">
-  <!-- fake title bar -->
-  <div class="title-bar">
-    <div class="title-left">
-      <div class="win-dots">
-        <div class="win-dot red"></div>
-        <div class="win-dot yellow"></div>
-        <div class="win-dot green"></div>
-      </div>
-      <span>Digital Mixer Control</span>
+  <header>
+    <h1>Gemaudio 2.1 Digital Mixer</h1>
+    <div>
+      <span id="status"><span></span>Disconnected</span>
+      <button id="btnConnect">Connect BLE</button>
     </div>
-    <div class="title-center">
-      <div class="tab active">Mixer</div>
-      <div class="tab">EQ</div>
-      <div class="tab">FX</div>
-    </div>
-    <div class="title-right">Sample Rate: 48 kHz • 24-bit</div>
-  </div>
+  </header>
 
-  <div class="main">
-    <!-- TOP: processing / meters -->
-    <div class="processing-row">
-      <div class="proc-panel">
-        <div class="proc-title">Input / Gate / Comp</div>
-        <div class="proc-body">
-          <div class="small-meter-block">
-            <div class="small-meter-title">Gate</div>
-            <div class="small-meter">
-              <div class="small-meter-bar">
-                <div class="small-meter-fill" id="gateFill"></div>
-              </div>
-            </div>
-            <div class="small-meter-scale">Open: -40 dB</div>
-          </div>
-          <div class="small-meter-block">
-            <div class="small-meter-title">Comp</div>
-            <div class="small-meter">
-              <div class="small-meter-bar">
-                <div class="small-meter-fill" id="compFill"></div>
-              </div>
-            </div>
-            <div class="small-meter-scale">GR: 3 dB</div>
-          </div>
-          <div class="small-meter-block">
-            <div class="small-meter-title">Limiter</div>
-            <div class="small-meter">
-              <div class="small-meter-bar">
-                <div class="small-meter-fill" id="limFill"></div>
-              </div>
-            </div>
-            <div class="small-meter-scale">Ceiling: -1 dB</div>
-          </div>
+  <main>
+    <!-- Channel 1 -->
+    <section class="strip" id="ch1">
+      <h2>Channel 1</h2>
+      <div class="faders">
+        <div class="fader">
+          <label>GAIN</label>
+          <input type="range" min="0" max="100" value="50" data-param="ch1_gain">
+          <div class="value">50</div>
         </div>
-        <div class="proc-buttons">
-          <button class="btn-mini active">Gate</button>
-          <button class="btn-mini active">Comp</button>
-          <button class="btn-mini">Limiter</button>
+        <div class="fader">
+          <label>BASS</label>
+          <input type="range" min="-15" max="15" value="0" data-param="ch1_bass">
+          <div class="value">0 dB</div>
+        </div>
+        <div class="fader">
+          <label>MID</label>
+          <input type="range" min="-15" max="15" value="0" data-param="ch1_mid">
+          <div class="value">0 dB</div>
+        </div>
+        <div class="fader">
+          <label>TREBLE</label>
+          <input type="range" min="-15" max="15" value="0" data-param="ch1_treble">
+          <div class="value">0 dB</div>
+        </div>
+        <div class="fader">
+          <label>REVERB</label>
+          <input type="range" min="0" max="100" value="20" data-param="ch1_reverb">
+          <div class="value">20</div>
         </div>
       </div>
+      <div class="buttons">
+        <button data-toggle="ch1_mute">Mute</button>
+        <button data-toggle="ch1_solo">Solo</button>
+      </div>
+    </section>
 
-      <div class="proc-panel">
-        <div class="proc-title">Selected Channel</div>
-        <div style="display:flex; gap:8px; margin-top:4px; flex:1;">
-          <div class="small-meter-block" style="flex:1;">
-            <div class="small-meter-title">Input</div>
-            <div class="small-meter">
-              <div class="small-meter-bar">
-                <div class="small-meter-fill" id="inFill"></div>
-              </div>
-            </div>
-            <div class="small-meter-scale" id="inLevelText">-12 dB</div>
-          </div>
-          <div class="small-meter-block" style="flex:1;">
-            <div class="small-meter-title">Post EQ</div>
-            <div class="small-meter">
-              <div class="small-meter-bar">
-                <div class="small-meter-fill" id="postFill"></div>
-              </div>
-            </div>
-            <div class="small-meter-scale" id="postLevelText">-6 dB</div>
-          </div>
-          <div class="small-meter-block" style="flex:1;">
-            <div class="small-meter-title">Output</div>
-            <div class="small-meter">
-              <div class="small-meter-bar">
-                <div class="small-meter-fill" id="outFill"></div>
-              </div>
-            </div>
-            <div class="small-meter-scale" id="outLevelText">-3 dB</div>
-          </div>
+    <!-- Channel 2 -->
+    <section class="strip" id="ch2">
+      <h2>Channel 2</h2>
+      <div class="faders">
+        <div class="fader">
+          <label>GAIN</label>
+          <input type="range" min="0" max="100" value="50" data-param="ch2_gain">
+          <div class="value">50</div>
+        </div>
+        <div class="fader">
+          <label>BASS</label>
+          <input type="range" min="-15" max="15" value="0" data-param="ch2_bass">
+          <div class="value">0 dB</div>
+        </div>
+        <div class="fader">
+          <label>MID</label>
+          <input type="range" min="-15" max="15" value="0" data-param="ch2_mid">
+          <div class="value">0 dB</div>
+        </div>
+        <div class="fader">
+          <label>TREBLE</label>
+          <input type="range" min="-15" max="15" value="0" data-param="ch2_treble">
+          <div class="value">0 dB</div>
+        </div>
+        <div class="fader">
+          <label>REVERB</label>
+          <input type="range" min="0" max="100" value="20" data-param="ch2_reverb">
+          <div class="value">20</div>
         </div>
       </div>
+      <div class="buttons">
+        <button data-toggle="ch2_mute">Mute</button>
+        <button data-toggle="ch2_solo">Solo</button>
+      </div>
+    </section>
 
-      <div class="proc-panel">
-        <div class="proc-title">Link / Bluetooth</div>
-        <div style="margin-top:4px; display:flex; flex-direction:column; gap:4px;">
-          <div class="bt-pill" id="btPill">
-            <div class="bt-dot"></div>
-            <div>
-              <div style="text-transform:uppercase; letter-spacing:.12em; font-size:.6rem;">Bluetooth</div>
-              <div style="font-size:.65rem; color:#9ca3af;" id="btText">Disconnected</div>
-            </div>
-          </div>
-          <button class="btn-mini" id="btnMockBT">Toggle Connect</button>
-          <div class="note-bar">
-            จุดต่อกับ ESP32 / บอร์ดจริง: แค่เอาค่าจากมิก + EQ ส่งผ่าน BLE/Wi-Fi แทน console.log
-          </div>
+    <!-- Master -->
+    <section class="strip" id="master">
+      <h2>Master</h2>
+      <div class="faders">
+        <div class="fader">
+          <label>MAIN</label>
+          <input type="range" min="0" max="100" value="70" data-param="master_vol">
+          <div class="value">70</div>
+        </div>
+        <div class="fader">
+          <label>SUB</label>
+          <input type="range" min="0" max="100" value="60" data-param="sub_vol">
+          <div class="value">60</div>
+        </div>
+        <div class="fader">
+          <label>BAL L/R</label>
+          <input type="range" min="-50" max="50" value="0" data-param="balance">
+          <div class="value">Center</div>
         </div>
       </div>
-    </div>
-
-    <!-- MIDDLE: Mixer -->
-    <div class="mixer-row">
-      <div class="channel-scroll" id="channelScroll">
-        <!-- จะถูกเติมด้วย JS -->
+      <div class="buttons">
+        <button data-toggle="sub_enable">Sub On/Off</button>
+        <button data-toggle="bypass_dsp">Bypass DSP</button>
       </div>
+    </section>
+  </main>
 
-      <div class="side-master">
-        <div class="side-panel">
-          <div class="side-title">Master L/R</div>
-          <div class="master-meters">
-            <div class="master-ladder" data-master="L"></div>
-            <div class="master-ladder" data-master="R"></div>
-            <div class="master-scale">
-              <span>0</span>
-              <span>-3</span>
-              <span>-6</span>
-              <span>-9</span>
-              <span>-12</span>
-              <span>-18</span>
-              <span>-24</span>
-              <span>-∞</span>
-            </div>
-          </div>
-          <div class="master-fader-wrap">
-            <div class="fader-track">
-              <input type="range" class="fader" id="masterFader" min="-60" max="10" value="-3">
-            </div>
-            <div class="fader-db">
-              Master: <span id="masterDb">-3</span> dB
-            </div>
-          </div>
-        </div>
+  <footer>
+    <div id="vu"><div id="vu-inner"></div></div>
+    <div id="log"></div>
+  </footer>
 
-        <div class="side-panel">
-          <div class="side-title">Bus / FX Send</div>
-          <div style="display:flex; flex-wrap:wrap; gap:4px;">
-            <button class="btn-mini">Bus 1</button>
-            <button class="btn-mini">Bus 2</button>
-            <button class="btn-mini">Bus 3</button>
-            <button class="btn-mini">FX 1</button>
-            <button class="btn-mini">FX 2</button>
-          </div>
-        </div>
-      </div>
-    </div>
+  <script>
+    // ===== UI logic =====
+    const logEl = document.getElementById('log');
+    const statusEl = document.getElementById('status');
+    const vuInner = document.getElementById('vu-inner');
 
-    <!-- BOTTOM: EQ -->
-    <div class="eq-row">
-      <div class="eq-panel">
-        <div class="eq-title-row">
-          <div class="eq-title">Channel EQ</div>
-          <div style="font-size:0.65rem; color:#9ca3af;">Parametric • 5 Bands</div>
-        </div>
-        <div class="eq-curve-box">
-          <svg class="eq-svg" viewBox="0 0 800 180" preserveAspectRatio="none" id="eqSvg">
-            <!-- vertical grid lines (freq) -->
-            <g id="eqGrid"></g>
-            <!-- curve -->
-            <path id="eqCurve" class="eq-curve" d="" />
-            <!-- points -->
-            <g id="eqPoints"></g>
-          </svg>
-        </div>
-        <div class="eq-band-list" id="eqBandList">
-          <!-- เติมด้วย JS -->
-        </div>
-      </div>
-
-      <div class="eq-param-panel">
-        <div class="eq-param-title">Selected Band</div>
-        <div class="eq-param-grid">
-          <div class="param-box">
-            <div class="param-label">Band</div>
-            <div class="param-value param-active" id="selBandName">1</div>
-          </div>
-          <div class="param-box">
-            <div class="param-label">Type</div>
-            <div class="param-value" id="selBandType">PEQ</div>
-          </div>
-          <div class="param-box">
-            <div class="param-label">On</div>
-            <div class="param-value param-active" id="selBandOn">Yes</div>
-          </div>
-          <div class="param-box">
-            <div class="param-label">Freq</div>
-            <div class="param-value" id="selBandFreq">1.00 kHz</div>
-          </div>
-          <div class="param-box">
-            <div class="param-label">Gain</div>
-            <div class="param-value" id="selBandGain">+3.0 dB</div>
-          </div>
-          <div class="param-box">
-            <div class="param-label">Q</div>
-            <div class="param-value" id="selBandQ">1.0</div>
-          </div>
-        </div>
-        <div class="note-bar">
-          กราฟ EQ นี้เป็น UI ให้ลองเล่น: ปรับสไลเดอร์ FREQ / GAIN / Q → เส้นเหลืองจะเปลี่ยนตาม  
-          เวลาไปต่อบอร์ดจริงก็เอาค่าพวกนี้ไปคำนวนฟิลเตอร์บน DSP/ESP32
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<script>
-  /* ---------- helper ---------- */
-  function dbToSteps(db, totalSteps) {
-    const minDb = -60;
-    const maxDb = 0;
-    if (db <= minDb) return 0;
-    const c = Math.min(db, maxDb);
-    const ratio = (c - minDb) / (maxDb - minDb);
-    return Math.round(ratio * totalSteps);
-  }
-
-  /* ---------- build mixer channels ---------- */
-  const channels = [
-    { id: 1, short: "VOC1", label: "Vocal 1", type: "vocal", db: -6 },
-    { id: 2, short: "VOC2", label: "Vocal 2", type: "vocal", db: -6 },
-    { id: 3, short: "MUSL", label: "Music L", type: "music", db: -10 },
-    { id: 4, short: "MUSR", label: "Music R", type: "music", db: -10 },
-    { id: 5, short: "MIC3", label: "Mic 3", type: "vocal", db: -8 },
-    { id: 6, short: "MIC4", label: "Mic 4", type: "vocal", db: -8 },
-    { id: 7, short: "FX1", label: "FX Return 1", type: "other", db: -12 },
-    { id: 8, short: "FX2", label: "FX Return 2", type: "other", db: -12 }
-  ];
-
-  const channelScroll = document.getElementById("channelScroll");
-
-  function createChannelStrip(ch) {
-    const el = document.createElement("div");
-    el.className = "chan";
-    el.dataset.channel = ch.id;
-
-    el.innerHTML = `
-      <div class="ch-header">
-        <div class="ch-top">
-          <span class="ch-name">${ch.short}</span>
-          <span class="ch-num">CH ${ch.id}</span>
-        </div>
-        <div class="ch-tag ${ch.type === "vocal" ? "vocal" : ch.type === "music" ? "music" : ""}">
-          ${ch.label}
-        </div>
-      </div>
-
-      <div class="ch-buttons">
-        <div class="btn-square on active">ON</div>
-        <div class="btn-square sel">SEL</div>
-        <div class="btn-square solo">S</div>
-        <div class="btn-square mute">M</div>
-      </div>
-
-      <div class="ch-meter">
-        <div class="meter-ladder" data-meter-ladder>
-          ${Array.from({length:14}).map((_,i)=>{
-            if (i>=12) return '<div class="meter-step red"></div>';
-            if (i>=10) return '<div class="meter-step yellow"></div>';
-            return '<div class="meter-step green"></div>';
-          }).join("")}
-        </div>
-        <div class="meter-scale">
-          <span>0</span>
-          <span>-6</span>
-          <span>-12</span>
-          <span>-18</span>
-          <span>-24</span>
-          <span>-∞</span>
-        </div>
-      </div>
-
-      <div class="fader-wrap">
-        <div class="fader-track">
-          <input type="range" class="fader" min="-60" max="10" value="${ch.db}">
-        </div>
-        <div class="fader-db">
-          <span data-db>${ch.db}</span> dB
-        </div>
-      </div>
-
-      <div class="ch-footer">Main L/R</div>
-    `;
-    return el;
-  }
-
-  channels.forEach(ch => {
-    channelScroll.appendChild(createChannelStrip(ch));
-  });
-
-  /* init channel behaviours */
-  document.querySelectorAll(".chan").forEach(chan => {
-    const fader = chan.querySelector(".fader");
-    const dbSpan = chan.querySelector("[data-db]");
-    const ladder = chan.querySelector("[data-meter-ladder]");
-    const steps = ladder ? Array.from(ladder.querySelectorAll(".meter-step")) : [];
-
-    function applyFader() {
-      const db = Number(fader.value);
-      dbSpan.textContent = db.toString();
-      const n = dbToSteps(db, steps.length);
-      steps.forEach((s, idx) => {
-        if (idx < n) s.classList.add("active");
-        else s.classList.remove("active");
-      });
+    function log(msg) {
+      const time = new Date().toLocaleTimeString();
+      logEl.textContent = `[${time}] ${msg}\n` + logEl.textContent;
     }
-    fader.addEventListener("input", () => {
-      applyFader();
-      // ตรงนี้คือจุดที่จะส่งค่าไปบอร์ดจริงในอนาคต
-      // console.log("CH", chan.dataset.channel, "dB =", fader.value);
-    });
-    applyFader();
 
-    chan.querySelectorAll(".btn-square").forEach(btn => {
-      btn.addEventListener("click", () => {
-        btn.classList.toggle("active");
+    function sendParam(name, value) {
+      // ตรงนี้ไว้ผูกกับ BLE / ESP32
+      log(`sendParam(${name} = ${value})`);
+      // TODO: ส่งผ่าน BLE characteristic จริง ๆ
+    }
+
+    // update slider labels
+    document.querySelectorAll('.fader input[type="range"]').forEach(sl => {
+      const valueEl = sl.parentElement.querySelector('.value');
+      const param = sl.dataset.param;
+
+      function update() {
+        let v = sl.value;
+        if (param.includes('bass') || param.includes('mid') || param.includes('treble')) {
+          valueEl.textContent = v + ' dB';
+        } else if (param === 'balance') {
+          if (v == 0) valueEl.textContent = 'Center';
+          else if (v < 0) valueEl.textContent = `L ${Math.abs(v)}`;
+          else valueEl.textContent = `R ${v}`;
+        } else {
+          valueEl.textContent = v;
+        }
+        sendParam(param, v);
+        vuInner.style.width = (20 + Math.abs(v) * 0.6) + '%';
+      }
+
+      update();
+      sl.addEventListener('input', update);
+    });
+
+    // toggle buttons
+    document.querySelectorAll('.buttons button').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const key = btn.dataset.toggle;
+        btn.classList.toggle('active');
+        const active = btn.classList.contains('active');
+        sendParam(key, active ? 1 : 0);
       });
     });
-  });
 
-  /* ---------- master meters ---------- */
-  const masterFader = document.getElementById("masterFader");
-  const masterDbSpan = document.getElementById("masterDb");
-  const masterLadders = document.querySelectorAll(".master-ladder");
-
-  function applyMaster() {
-    const db = Number(masterFader.value);
-    masterDbSpan.textContent = db.toString();
-    masterLadders.forEach(ladder => {
-      const steps = Array.from(ladder.querySelectorAll(".master-step"));
-      const n = dbToSteps(db, steps.length);
-      steps.forEach((s, idx) => {
-        if (idx < n) s.classList.add("active");
-        else s.classList.remove("active");
-      });
-    });
-  }
-
-  masterLadders.forEach(ladder => {
-    // build steps
-    ladder.innerHTML = "";
-    const total = 16;
-    for (let i = 0; i < total; i++) {
-      const step = document.createElement("div");
-      step.className = "master-step " +
-        (i >= total-2 ? "red" : i >= total-4 ? "yellow" : "green");
-      ladder.appendChild(step);
-    }
-  });
-
-  masterFader.addEventListener("input", applyMaster);
-  applyMaster();
-
-  /* ---------- Bluetooth mock ---------- */
-  const btPill = document.getElementById("btPill");
-  const btText = document.getElementById("btText");
-  document.getElementById("btnMockBT").addEventListener("click", () => {
-    const connected = btPill.classList.toggle("connected");
-    btText.textContent = connected ? "Connected (mock)" : "Disconnected";
-  });
-
-  /* ---------- small meters animation (fake) ---------- */
-  function setFill(id, percent) {
-    const el = document.getElementById(id);
-    if (el) el.style.height = percent + "%";
-  }
-  setFill("gateFill", 30);
-  setFill("compFill", 45);
-  setFill("limFill", 10);
-  setFill("inFill", 50);
-  setFill("postFill", 65);
-  setFill("outFill", 75);
-
-  /* ---------- EQ section ---------- */
-
-  // 5-band param eq mock
-  const eqBands = [
-    { id: 1, type: "Low Shelf",  freq: 80,   gain: 4,   q: 0.8, color: "#f97316" },
-    { id: 2, type: "Peaking",    freq: 250,  gain: -2,  q: 1.0, color: "#22c55e" },
-    { id: 3, type: "Peaking",    freq: 1000, gain: 5,   q: 1.2, color: "#38bdf8" },
-    { id: 4, type: "Peaking",    freq: 3500, gain: -6,  q: 1.0, color: "#a855f7" },
-    { id: 5, type: "High Shelf", freq: 9000, gain: 3,   q: 0.7, color: "#facc15" }
-  ];
-
-  const eqSvg = document.getElementById("eqSvg");
-  const eqCurve = document.getElementById("eqCurve");
-  const eqPointsGroup = document.getElementById("eqPoints");
-  const eqGridGroup = document.getElementById("eqGrid");
-  const eqBandList = document.getElementById("eqBandList");
-
-  const selName = document.getElementById("selBandName");
-  const selType = document.getElementById("selBandType");
-  const selOn   = document.getElementById("selBandOn");
-  const selFreq = document.getElementById("selBandFreq");
-  const selGain = document.getElementById("selBandGain");
-  const selQ    = document.getElementById("selBandQ");
-
-  let selectedBandId = 1;
-
-  function fmtFreq(f) {
-    if (f < 1000) return f.toFixed(0) + " Hz";
-    if (f < 10000) return (f/1000).toFixed(2) + " kHz";
-    return (f/1000).toFixed(1) + " kHz";
-  }
-  function fmtGain(g) {
-    return (g >= 0 ? "+" : "") + g.toFixed(1) + " dB";
-  }
-
-  // map freq->x (log)
-  const minF = 20, maxF = 20000;
-  function freqToX(freq) {
-    const w = 800;
-    const logMin = Math.log10(minF);
-    const logMax = Math.log10(maxF);
-    const lf = Math.log10(freq);
-    const ratio = (lf - logMin) / (logMax - logMin);
-    return ratio * w;
-  }
-  function gainToY(gain) {
-    const h = 180;
-    const minG = -15, maxG = 15;
-    const g = Math.max(minG, Math.min(maxG, gain));
-    const ratio = (g - minG) / (maxG - minG); // 0..1
-    const y = h - ratio * h;
-    return Math.max(0, Math.min(h, y));
-  }
-
-  // build grid lines
-  const freqsGrid = [31.5, 63, 125, 250, 500, 1000, 2000, 4000, 8000, 16000];
-  freqsGrid.forEach(f => {
-    const x = freqToX(f);
-    const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
-    line.setAttribute("x1", x);
-    line.setAttribute("x2", x);
-    line.setAttribute("y1", 0);
-    line.setAttribute("y2", 180);
-    line.setAttribute("class", "eq-grid-line");
-    eqGridGroup.appendChild(line);
-  });
-
-  // build points
-  eqPointsGroup.innerHTML = "";
-  eqBands.forEach(b => {
-    const c = document.createElementNS("http://www.w3.org/2000/svg","circle");
-    c.setAttribute("r", 6);
-    c.setAttribute("fill", b.color);
-    c.setAttribute("class","eq-point");
-    c.dataset.bandId = b.id;
-    eqPointsGroup.appendChild(c);
-  });
-
-  function updateCurve() {
-    const pts = eqBands.map(b => ({
-      x: freqToX(b.freq),
-      y: gainToY(b.gain),
-      color: b.color,
-      id: b.id
-    })).sort((a,b)=>a.x-b.x);
-
-    // path
-    let d = "";
-    pts.forEach((p,i) => {
-      if (i===0) d += `M ${p.x} ${p.y}`;
-      else d += ` L ${p.x} ${p.y}`;
-    });
-    // extend to left/right for fill
-    if (pts.length > 0) {
-      d += ` L 800 90 L 0 90 Z`;
-    }
-    eqCurve.setAttribute("d", d);
-
-    // move circles
-    const circles = eqPointsGroup.querySelectorAll("circle");
-    circles.forEach(c => {
-      const id = Number(c.dataset.bandId);
-      const b = eqBands.find(b=>b.id===id);
-      const p = pts.find(p=>p.id===id);
-      if (p) {
-        c.setAttribute("cx", p.x);
-        c.setAttribute("cy", p.y);
+    // ===== BLE skeleton =====
+    let bleDevice = null;
+    document.getElementById('btnConnect').addEventListener('click', async () => {
+      try {
+        // ไว้ใส่ service UUID จริง ๆ
+        // const device = await navigator.bluetooth.requestDevice({ filters: [{ services: ['xxxx'] }] });
+        // ...
+        statusEl.classList.add('connected');
+        statusEl.innerHTML = '<span></span>Connected (mock)';
+        log('Connected (mock, ยังไม่ผูก UUID จริง)');
+      } catch (e) {
+        log('BLE error: ' + e);
       }
     });
-
-    // update selected band panel
-    const bSel = eqBands.find(b=>b.id===selectedBandId) || eqBands[0];
-    selName.textContent = bSel.id.toString();
-    selType.textContent = bSel.type;
-    selOn.textContent = "Yes";
-    selFreq.textContent = fmtFreq(bSel.freq);
-    selGain.textContent = fmtGain(bSel.gain);
-    selQ.textContent = bSel.q.toFixed(2);
-  }
-
-  // build band cards + sliders
-  eqBandList.innerHTML = "";
-  eqBands.forEach(b => {
-    const card = document.createElement("div");
-    card.className = "eq-band-card";
-    card.dataset.bandId = b.id;
-
-    card.innerHTML = `
-      <div class="eq-band-head">
-        <span class="badge band">B${b.id}</span>
-        <span class="badge type">${b.type}</span>
-      </div>
-      <div class="eq-control">
-        <div class="eq-label">
-          <span>Freq</span>
-          <span data-freq-label>${fmtFreq(b.freq)}</span>
-        </div>
-        <input type="range" class="eq-slider" min="20" max="20000" value="${b.freq}">
-      </div>
-      <div class="eq-control">
-        <div class="eq-label">
-          <span>Gain</span>
-          <span data-gain-label>${fmtGain(b.gain)}</span>
-        </div>
-        <input type="range" class="eq-slider" min="-15" max="15" step="0.5" value="${b.gain}">
-      </div>
-      <div class="eq-control">
-        <div class="eq-label">
-          <span>Q</span>
-          <span data-q-label>${b.q.toFixed(2)}</span>
-        </div>
-        <input type="range" class="eq-slider" min="0.3" max="3" step="0.1" value="${b.q}">
-      </div>
-    `;
-
-    // click card to select
-    card.addEventListener("click", () => {
-      selectedBandId = b.id;
-      updateCurve();
-    });
-
-    const [freqSlider, gainSlider, qSlider] = card.querySelectorAll(".eq-slider");
-    const freqLabel = card.querySelector("[data-freq-label]");
-    const gainLabel = card.querySelector("[data-gain-label]");
-    const qLabel    = card.querySelector("[data-q-label]");
-
-    freqSlider.addEventListener("input", () => {
-      const band = eqBands.find(bb=>bb.id===b.id);
-      band.freq = Number(freqSlider.value);
-      freqLabel.textContent = fmtFreq(band.freq);
-      updateCurve();
-    });
-    gainSlider.addEventListener("input", () => {
-      const band = eqBands.find(bb=>bb.id===b.id);
-      band.gain = Number(gainSlider.value);
-      gainLabel.textContent = fmtGain(band.gain);
-      updateCurve();
-    });
-    qSlider.addEventListener("input", () => {
-      const band = eqBands.find(bb=>bb.id===b.id);
-      band.q = Number(qSlider.value);
-      qLabel.textContent = band.q.toFixed(2);
-      updateCurve();
-    });
-
-    eqBandList.appendChild(card);
-  });
-
-  updateCurve();
-</script>
+  </script>
 </body>
 </html>
